@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  selenium-chrome:
+    image: selenium/standalone-chrome:latest
+    shm_size: 2g
+    ports:
+      - "4444:4444"
+    platform: linux/amd64
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  scraper:
+    build: .
+    platform: linux/amd64
+    env_file:
+      - .env
+    depends_on:
+      selenium-chrome:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
