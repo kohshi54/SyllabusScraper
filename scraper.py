@@ -36,8 +36,8 @@ def main():
         term_select = Select(driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_ddl_term"))
         term_select.select_by_value("1") # 1 -> Spring
 
-        term_select = Select(driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_ddlPageSize"))
-        term_select.select_by_value("50")
+        size_select = Select(driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_ddlPageSize"))
+        size_select.select_by_value("50")
 
         search_button = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_btn_search")
         search_button.click()
@@ -49,40 +49,46 @@ def main():
         search_results_page_source = driver.page_source
         soup = BeautifulSoup(search_results_page_source, 'html.parser')
 
+        fields = {
+            "title": "_lbl_title_j",
+            "instructor": "_lbl_instructor",
+            "schedule": "_lbl_schedule",
+            "courseno": "_lbl_course_no",
+            "room": "_lbl_room",
+            "teaching mode": "_lbl_online_flg",
+            "lang": "_lbl_lang",
+            "year": "_lbl_ay",
+            "term": "_lbl_season"
+        }
         courses_data = []
         course_rows = soup.find_all('tr')
         for row in course_rows:
-            course_data = {
-                "title": row.find(id=lambda x: x and x.endswith("_lbl_title_j")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_title_e")) else "NO DATA",
-                "instructor": row.find(id=lambda x: x and x.endswith("_lbl_instructor")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_instructor")) else "NO DATA",
-                "schedule": row.find(id=lambda x: x and x.endswith("_lbl_schedule")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_schedule")) else "NO DATA",
-                "courseno": row.find(id=lambda x: x and x.endswith("_lbl_course_no")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_course_no")) else "NO DATA",
-                "room": row.find(id=lambda x: x and x.endswith("_lbl_room")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_room")) else "NO DATA",
-                "teaching mode": row.find(id=lambda x: x and x.endswith("_lbl_online_flg")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_online_flg")) else "NO DATA",
-                "lang": row.find(id=lambda x: x and x.endswith("_lbl_lang")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_lang")) else "NO DATA",
-                "year": row.find(id=lambda x: x and x.endswith("_lbl_ay")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_ay")) else "NO DATA",
-                "term": row.find(id=lambda x: x and x.endswith("_lbl_season")).text.strip() if row.find(id=lambda x: x and x.endswith("_lbl_season")) else "NO DATA"
-            }
-            courses_data.append(course_data)
+            course_data = {}
+            for field, end in fields.items():
+                element = row.find(id=lambda x: x and x.endswith(end))
+                course_data[field] = element.text.strip() if element and element.text else "NO DATA"
+            if not all(value == 'NO DATA' for value in course_data.values()):
+                courses_data.append(course_data)
 
         with open('/app/data/courses_data.csv', 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file, delimiter=';')
             writer.writerow(['title', 'instructor', 'schedule', 'courseno', 'room', 'teaching mode', 'lang', 'year', 'term'])
             for course in courses_data:
-                if not all(value == 'NO DATA' for value in course.values()):
-                    writer.writerow([
-                        course['title'],
-                        course['instructor'],
-                        course['schedule'],
-                        course['courseno'],
-                        course['room'],
-                        course['teaching mode'],
-                        course['lang'],
-                        course['year'],
-                        course['term']
-                    ])
+                writer.writerow([
+                    course['title'],
+                    course['instructor'],
+                    course['schedule'],
+                    course['courseno'],
+                    course['room'],
+                    course['teaching mode'],
+                    course['lang'],
+                    course['year'],
+                    course['term']
+                ])
 
     finally:
         driver.quit()
 
-main()
+if __name__ == "__main__":
+    main()
+
